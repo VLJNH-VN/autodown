@@ -52,7 +52,7 @@ module.exports = MediaDownloader;*/
 const axios = require('axios');
 
 class MediaDownloader {
-  constructor(apiBaseUrl = "https://j2-down.onrender.com/media/url") {
+  constructor(apiBaseUrl = "https://api-vljnh-aybq.onrender.com/media/url") {
     this.apiBaseUrl = apiBaseUrl;
   }
 
