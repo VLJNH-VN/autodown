@@ -140,3 +140,59 @@ MIT License - **Miễn phí sử dụng và tùy chỉnh.**
 
 ### **📞 Liên Hệ & Đóng Góp**
 Nếu bạn muốn đóng góp hoặc báo lỗi, vui lòng mở issue trên GitHub hoặc liên hệ qua email! 🚀
+### **Code mẫu **
+```bash
+const { downloadMedia } = require('media-downloader');
+const fs = require('fs');
+const path = require('path');
+
+exports.config = {
+    name: "down",
+    version: "1.0",
+    hasPermission: 0,
+    credits: "DC Nam",
+    description: "Tải nội dung từ các mạng xã hội.",
+    commandCategory: "Tiện Ích",
+    usages: "[URL]",
+    cooldowns: 5,
+    dependencies: {
+        "media-downloader": ""
+    }
+};
+
+exports.run = async function ({ api, event, args }) {
+    const send = (msg) => api.sendMessage(msg, event.threadID, event.messageID);
+    
+    if (!args[0]) return send("❌ Vui lòng nhập URL để tải xuống!");
+
+    const url = args[0];
+    send(`🔄 Đang tải xuống nội dung từ: ${url}`);
+
+    try {
+        const result = await downloadMedia(url);
+
+        if (result.success && result.media.length > 0) {
+            const media = result.media[0]; // Chọn file đầu tiên
+            const fileName = path.join(__dirname, "downloads", `${media.id}.${media.extension}`);
+
+            if (!fs.existsSync("downloads")) fs.mkdirSync("downloads");
+
+            const file = fs.createWriteStream(fileName);
+            const response = await fetch(media.url);
+            response.body.pipe(file);
+
+            file.on('finish', () => {
+                api.sendMessage({
+                    body: `✅ Tải xuống thành công!\n🎬 Tiêu đề: ${result.title || "Không có"}\n📂 Định dạng: ${media.extension}`,
+                    attachment: fs.createReadStream(fileName)
+                }, event.threadID, () => fs.unlinkSync(fileName)); // Xóa file sau khi gửi
+            });
+
+        } else {
+            send("⚠️ Không tìm thấy nội dung có thể tải xuống.");
+        }
+    } catch (error) {
+        send(`❌ Lỗi khi tải: ${error.message}`);
+    }
+};
+```
