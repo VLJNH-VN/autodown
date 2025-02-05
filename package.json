@@ -7,7 +7,7 @@
     "start": "node server.js"
   },
   "keywords": ["media", "downloader", "video", "audio", "tiktok", "youtube"],
-  "author": "Your Name",
+  "author": "VLjnh",
   "license": "MIT",
   "dependencies": {
     "axios": "^1.6.0",
