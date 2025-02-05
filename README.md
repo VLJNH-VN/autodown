@@ -1,6 +1,4 @@
-Dưới đây là nội dung cho file **`README.md`** (hoặc `hd.md` nếu bạn muốn) để hướng dẫn cách sử dụng package **`media-downloader`**.  
 
----
 
 ### **📌 Media Downloader - Hướng Dẫn Sử Dụng**  
 
