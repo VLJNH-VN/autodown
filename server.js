@@ -2,74 +2,175 @@ const express = require("express")
 const cors = require("cors")
 const morgan = require("morgan")
 const NodeCache = require("node-cache")
-const ytdlp = require("yt-dlp-exec")
+const ytdlp = require("youtube-dl-exec")
 
 const app = express()
-
-const cache = new NodeCache({ stdTTL: 600 })
 
 app.use(cors())
 app.use(morgan("dev"))
 
+const cache = new NodeCache({ stdTTL: 600 })
+
 const PORT = process.env.PORT || 3000
 
-app.get("/", (req, res) => {
-  res.json({
-    status: "Auto Downloader API",
-    support: "1000+ websites",
-    endpoint: "/api?url="
-  })
+
+// =======================
+// HOME
+// =======================
+
+app.get("/", (req,res)=>{
+res.json({
+name:"Ultimate Downloader API",
+support:"1200+ websites",
+endpoints:[
+"/tiktok?url=",
+"/youtube?url=",
+"/instagram?url=",
+"/facebook?url=",
+"/api?url="
+]
+})
 })
 
-app.get("/api", async (req, res) => {
-  try {
 
-    const url = req.query.url
-    if (!url) {
-      return res.status(400).json({ error: "Missing url parameter" })
-    }
+// =======================
+// CORE FUNCTION
+// =======================
 
-    if (!url.startsWith("http")) {
-      return res.status(400).json({ error: "Invalid url" })
-    }
+async function extract(url){
 
-    const cacheData = cache.get(url)
-    if (cacheData) {
-      return res.json({
-        cached: true,
-        ...cacheData
-      })
-    }
+const cacheData = cache.get(url)
+if(cacheData) return cacheData
 
-    const info = await ytdlp(url, {
-      dumpSingleJson: true,
-      noWarnings: true,
-      noCheckCertificates: true,
-      preferFreeFormats: true,
-      socketTimeout: 15000
-    })
+const info = await ytdlp(url,{
+dumpSingleJson:true,
+noWarnings:true,
+noCheckCertificates:true,
+preferFreeFormats:true
+})
 
-    if (!info || !info.formats) {
-      return res.status(404).json({
-        error: "Cannot extract video info"
-      })
-    }
+const formats = (info.formats || [])
+.filter(f=>f.url && f.ext)
+.map(f=>({
+quality:f.format_note || (f.height ? f.height+"p":"auto"),
+ext:f.ext,
+url:f.url
+}))
+.slice(0,10)
 
-    const formats = info.formats
-      .filter(f => f.url)
-      .map(f => ({
-        quality: f.format_note || (f.height ? f.height + "p" : "unknown"),
-        ext: f.ext || "mp4",
-        url: f.url
-      }))
-      .filter((v, i, a) => a.findIndex(t => t.url === v.url) === i)
-      .slice(0, 10)
+const result = {
+title:info.title,
+duration:info.duration,
+uploader:info.uploader,
+thumbnail:info.thumbnail,
+formats
+}
 
-    const result = {
-      title: info.title || "Unknown",
-      duration: info.duration || 0,
-      uploader: info.uploader || "Unknown",
-      thumbnail: info.thumbnail || null,
+cache.set(url,result)
+
+return result
+}
+
+
+// =======================
+// UNIVERSAL API
+// =======================
+
+app.get("/api", async (req,res)=>{
+try{
+
+const url = req.query.url
+if(!url) return res.json({error:"missing url"})
+
+const data = await extract(url)
+
+res.json(data)
+
+}catch(e){
+res.json({error:true,message:e.message})
+}
+})
+
+
+// =======================
+// TIKTOK FAST API
+// =======================
+
+app.get("/tiktok", async (req,res)=>{
+try{
+
+const url = req.query.url
+if(!url) return res.json({error:"missing url"})
+
+const info = await ytdlp(url,{
+dumpSingleJson:true,
+noWarnings:true,
+format:"best"
+})
+
+res.json({
+title:info.title,
+thumbnail:info.thumbnail,
+video:info.url
+})
+
+}catch(e){
+res.json({error:true})
+}
+})
+
+
+// =======================
+// YOUTUBE API
+// =======================
+
+app.get("/youtube", async (req,res)=>{
+try{
+
+const url = req.query.url
+if(!url) return res.json({error:"missing url"})
+
+const info = await extract(url)
+
+res.json(info)
+
+}catch(e){
+res.json({error:true})
+}
+})
+
+
+// =======================
+// INSTAGRAM API
+// =======================
+
+app.get("/instagram", async (req,res)=>{
+try{
+
+const url = req.query.url
+if(!url) return res.json({error:"missing url"})
+
+const info = await ytdlp(url,{
+dumpSingleJson:true
+})
+
+res.json({
+title:info.title,
+thumbnail:info.thumbnail,
+video:info.url
+})
+
+}catch(e){
+res.json({error:true})
+}
+})
+
+
+// =======================
+
+app.listen(PORT,()=>{
+console.log("Downloader API running on "+PORT)
+})      thumbnail: info.thumbnail || null,
       formats
     }
 
