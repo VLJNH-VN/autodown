@@ -14,28 +14,23 @@ const cache = new NodeCache({ stdTTL: 600 })
 const PORT = process.env.PORT || 3000
 
 
-// =======================
-// HOME
-// =======================
+// ================= HOME =================
 
 app.get("/", (req,res)=>{
 res.json({
-name:"Ultimate Downloader API",
+status:"Ultimate Downloader API",
 support:"1200+ websites",
-endpoints:[
-"/tiktok?url=",
-"/youtube?url=",
-"/instagram?url=",
-"/facebook?url=",
-"/api?url="
-]
+endpoints:{
+universal:"/api?url=",
+tiktok:"/tiktok?url=",
+youtube:"/youtube?url=",
+instagram:"/instagram?url="
+}
 })
 })
 
 
-// =======================
-// CORE FUNCTION
-// =======================
+// ================= CORE EXTRACT =================
 
 async function extract(url){
 
@@ -50,20 +45,20 @@ preferFreeFormats:true
 })
 
 const formats = (info.formats || [])
-.filter(f=>f.url && f.ext)
-.map(f=>({
-quality:f.format_note || (f.height ? f.height+"p":"auto"),
-ext:f.ext,
-url:f.url
+.filter(f => f.url && f.ext)
+.map(f => ({
+quality: f.format_note || (f.height ? f.height + "p" : "auto"),
+ext: f.ext,
+url: f.url
 }))
 .slice(0,10)
 
 const result = {
-title:info.title,
-duration:info.duration,
-uploader:info.uploader,
-thumbnail:info.thumbnail,
-formats
+title: info.title || "Unknown",
+duration: info.duration || 0,
+uploader: info.uploader || "Unknown",
+thumbnail: info.thumbnail || null,
+formats: formats
 }
 
 cache.set(url,result)
@@ -72,11 +67,68 @@ return result
 }
 
 
-// =======================
-// UNIVERSAL API
-// =======================
+// ================= UNIVERSAL API =================
 
 app.get("/api", async (req,res)=>{
+try{
+
+const url = req.query.url
+
+if(!url){
+return res.json({
+error:true,
+message:"missing url"
+})
+}
+
+const data = await extract(url)
+
+res.json(data)
+
+}catch(e){
+
+res.json({
+error:true,
+message:e.message
+})
+
+}
+})
+
+
+// ================= TIKTOK FAST =================
+
+app.get("/tiktok", async (req,res)=>{
+try{
+
+const url = req.query.url
+if(!url) return res.json({error:"missing url"})
+
+const info = await ytdlp(url,{
+dumpSingleJson:true,
+format:"best"
+})
+
+res.json({
+title: info.title || "TikTok Video",
+thumbnail: info.thumbnail || null,
+video: info.url || null
+})
+
+}catch(e){
+
+res.json({
+error:true,
+message:e.message
+})
+
+}
+})
+
+
+// ================= YOUTUBE =================
+
+app.get("/youtube", async (req,res)=>{
 try{
 
 const url = req.query.url
@@ -87,62 +139,17 @@ const data = await extract(url)
 res.json(data)
 
 }catch(e){
-res.json({error:true,message:e.message})
-}
-})
-
-
-// =======================
-// TIKTOK FAST API
-// =======================
-
-app.get("/tiktok", async (req,res)=>{
-try{
-
-const url = req.query.url
-if(!url) return res.json({error:"missing url"})
-
-const info = await ytdlp(url,{
-dumpSingleJson:true,
-noWarnings:true,
-format:"best"
-})
 
 res.json({
-title:info.title,
-thumbnail:info.thumbnail,
-video:info.url
+error:true,
+message:e.message
 })
 
-}catch(e){
-res.json({error:true})
 }
 })
 
 
-// =======================
-// YOUTUBE API
-// =======================
-
-app.get("/youtube", async (req,res)=>{
-try{
-
-const url = req.query.url
-if(!url) return res.json({error:"missing url"})
-
-const info = await extract(url)
-
-res.json(info)
-
-}catch(e){
-res.json({error:true})
-}
-})
-
-
-// =======================
-// INSTAGRAM API
-// =======================
+// ================= INSTAGRAM =================
 
 app.get("/instagram", async (req,res)=>{
 try{
@@ -155,77 +162,24 @@ dumpSingleJson:true
 })
 
 res.json({
-title:info.title,
-thumbnail:info.thumbnail,
-video:info.url
+title: info.title || "Instagram Video",
+thumbnail: info.thumbnail || null,
+video: info.url || null
 })
 
 }catch(e){
-res.json({error:true})
-}
-})
-
-
-// =======================
-
-app.listen(PORT,()=>{
-console.log("Downloader API running on "+PORT)
-})      thumbnail: info.thumbnail || null,
-      formats
-    }
-
-    cache.set(url, result)
-
-    res.json(result)
-
-  } catch (err) {
-
-    console.error(err)
-
-    res.status(500).json({
-      error: true,
-      message: "Download extraction failed"
-    })
-  }
-})
-
-app.listen(PORT, () => {
-  console.log("Server running on port " + PORT)
-})noCheckCertificates:true,
-preferFreeFormats:true
-})
-
-const formats = info.formats
-.filter(f=>f.url)
-.map(f=>({
-quality:f.format_note || f.height+"p",
-ext:f.ext,
-url:f.url
-}))
-
-const result = {
-title:info.title,
-duration:info.duration,
-uploader:info.uploader,
-thumbnail:info.thumbnail,
-formats:formats.slice(0,10)
-}
-
-cache.set(url,result)
-
-res.json(result)
-
-}catch(err){
 
 res.json({
 error:true,
-message:err.message
+message:e.message
 })
 
 }
-
 })
 
+
+// ================= SERVER START =================
+
 app.listen(PORT,()=>{
-console.log("Server running "+PORT)
+console.log("Downloader API running on port " + PORT)
 })
