@@ -1,16 +1,15 @@
 {
-"name": "auto-downloader-api",
-"version": "1.0.0",
-"description": "Auto Downloader API support 1000+ websites using yt-dlp",
-"main": "server.js",
-"scripts": {
-"start": "node server.js"
+"name":"ultimate-downloader-api",
+"version":"1.0.0",
+"main":"server.js",
+"scripts":{
+"start":"node server.js"
 },
-"dependencies": {
-"cors": "^2.8.5",
-"express": "^4.19.2",
-"morgan": "^1.10.0",
-"node-cache": "^5.1.2",
-"yt-dlp-exec": "^2.0.0"
+"dependencies":{
+"cors":"^2.8.5",
+"express":"^4.19.2",
+"morgan":"^1.10.0",
+"node-cache":"^5.1.2",
+"youtube-dl-exec":"^3.0.0"
 }
 }
