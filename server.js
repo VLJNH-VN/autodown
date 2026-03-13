@@ -1,44 +1,32 @@
 const express = require("express")
-const youtubedl = require("youtube-dl-exec")
-const NodeCache = require("node-cache")
+const cors = require("cors")
+const { exec } = require("child_process")
 
 const app = express()
-const cache = new NodeCache({ stdTTL: 3600 })
+app.use(cors())
 
-app.get("/api/down", async (req, res) => {
+app.get("/api/down", (req, res) => {
 
   const url = req.query.url
-  if (!url) return res.json({ error: "Missing url" })
+  if (!url) return res.json({ error: "missing url" })
 
-  const cached = cache.get(url)
-  if (cached) return res.json(cached)
+  exec(`yt-dlp -j "${url}"`, (err, stdout) => {
 
-  try {
+    if (err) return res.json({ error: "download failed" })
 
-    const data = await youtubedl(url, {
-      dumpSingleJson: true,
-      noWarnings: true
-    })
+    const data = JSON.parse(stdout)
 
-    const result = {
+    res.json({
       title: data.title,
       duration: data.duration,
       thumbnail: data.thumbnail,
       video: data.url
-    }
-
-    cache.set(url, result)
-
-    res.json(result)
-
-  } catch (err) {
-
-    res.json({
-      error: "Download failed"
     })
 
-  }
+  })
 
 })
 
-app.listen(3000, () => console.log("API running"))
+app.listen(3000, () => {
+  console.log("DownAll API running")
+})
