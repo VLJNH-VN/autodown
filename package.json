@@ -1,15 +1,28 @@
 {
-"name":"ultimate-downloader-api",
-"version":"1.0.0",
-"main":"server.js",
-"scripts":{
-"start":"node server.js"
-},
-"dependencies":{
-"cors":"^2.8.5",
-"express":"^4.19.2",
-"morgan":"^1.10.0",
-"node-cache":"^5.1.2",
-"youtube-dl-exec":"^3.0.0"
-}
+  "name": "downall-api",
+  "version": "1.0.0",
+  "description": "Universal Downloader API (TikTok, YouTube, Instagram, Facebook, 1000+ sites)",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "downloader",
+    "tiktok-downloader",
+    "youtube-downloader",
+    "instagram-downloader",
+    "yt-dlp",
+    "api"
+  ],
+  "author": "downall",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "morgan": "^1.10.0",
+    "node-cache": "^5.1.2",
+    "yt-dlp-exec": "^2.3.9"
+  }
 }
