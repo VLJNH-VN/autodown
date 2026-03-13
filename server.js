@@ -1,185 +1,106 @@
 const express = require("express")
 const cors = require("cors")
 const morgan = require("morgan")
+const ytdlp = require("yt-dlp-exec")
 const NodeCache = require("node-cache")
-const ytdlp = require("youtube-dl-exec")
 
 const app = express()
+const cache = new NodeCache({ stdTTL: 3600 })
+
+const PORT = process.env.PORT || 3000
 
 app.use(cors())
 app.use(morgan("dev"))
 
-const cache = new NodeCache({ stdTTL: 600 })
-
-const PORT = process.env.PORT || 3000
-
-
-// ================= HOME =================
-
-app.get("/", (req,res)=>{
-res.json({
-status:"Ultimate Downloader API",
-support:"1200+ websites",
-endpoints:{
-universal:"/api?url=",
-tiktok:"/tiktok?url=",
-youtube:"/youtube?url=",
-instagram:"/instagram?url="
-}
-})
+app.get("/", (req, res) => {
+  res.json({
+    name: "DownAll API",
+    version: "1.0",
+    endpoints: [
+      "/api/down?url=",
+      "/api/info?url="
+    ]
+  })
 })
 
 
-// ================= CORE EXTRACT =================
+// ===============================
+// Download API
+// ===============================
 
-async function extract(url){
+app.get("/api/down", async (req, res) => {
 
-const cacheData = cache.get(url)
-if(cacheData) return cacheData
+  const url = req.query.url
+  if (!url) return res.json({ error: "Missing url" })
 
-const info = await ytdlp(url,{
-dumpSingleJson:true,
-noWarnings:true,
-noCheckCertificates:true,
-preferFreeFormats:true
-})
+  const cached = cache.get(url)
+  if (cached) return res.json(cached)
 
-const formats = (info.formats || [])
-.filter(f => f.url && f.ext)
-.map(f => ({
-quality: f.format_note || (f.height ? f.height + "p" : "auto"),
-ext: f.ext,
-url: f.url
-}))
-.slice(0,10)
+  try {
 
-const result = {
-title: info.title || "Unknown",
-duration: info.duration || 0,
-uploader: info.uploader || "Unknown",
-thumbnail: info.thumbnail || null,
-formats: formats
-}
+    const data = await ytdlp(url, {
+      dumpSingleJson: true,
+      noWarnings: true
+    })
 
-cache.set(url,result)
+    const result = {
+      status: true,
+      platform: data.extractor,
+      title: data.title,
+      duration: data.duration,
+      thumbnail: data.thumbnail,
+      video: data.url
+    }
 
-return result
-}
+    cache.set(url, result)
 
+    res.json(result)
 
-// ================= UNIVERSAL API =================
+  } catch (err) {
 
-app.get("/api", async (req,res)=>{
-try{
+    res.json({
+      status: false,
+      error: "Unsupported or private video"
+    })
 
-const url = req.query.url
+  }
 
-if(!url){
-return res.json({
-error:true,
-message:"missing url"
-})
-}
-
-const data = await extract(url)
-
-res.json(data)
-
-}catch(e){
-
-res.json({
-error:true,
-message:e.message
-})
-
-}
 })
 
 
-// ================= TIKTOK FAST =================
+// ===============================
+// Video Info
+// ===============================
 
-app.get("/tiktok", async (req,res)=>{
-try{
+app.get("/api/info", async (req, res) => {
 
-const url = req.query.url
-if(!url) return res.json({error:"missing url"})
+  const url = req.query.url
+  if (!url) return res.json({ error: "Missing url" })
 
-const info = await ytdlp(url,{
-dumpSingleJson:true,
-format:"best"
+  try {
+
+    const data = await ytdlp(url, {
+      dumpSingleJson: true
+    })
+
+    res.json({
+      title: data.title,
+      uploader: data.uploader,
+      duration: data.duration,
+      views: data.view_count,
+      thumbnail: data.thumbnail
+    })
+
+  } catch (e) {
+
+    res.json({
+      error: "Cannot fetch info"
+    })
+
+  }
+
 })
 
-res.json({
-title: info.title || "TikTok Video",
-thumbnail: info.thumbnail || null,
-video: info.url || null
-})
-
-}catch(e){
-
-res.json({
-error:true,
-message:e.message
-})
-
-}
-})
-
-
-// ================= YOUTUBE =================
-
-app.get("/youtube", async (req,res)=>{
-try{
-
-const url = req.query.url
-if(!url) return res.json({error:"missing url"})
-
-const data = await extract(url)
-
-res.json(data)
-
-}catch(e){
-
-res.json({
-error:true,
-message:e.message
-})
-
-}
-})
-
-
-// ================= INSTAGRAM =================
-
-app.get("/instagram", async (req,res)=>{
-try{
-
-const url = req.query.url
-if(!url) return res.json({error:"missing url"})
-
-const info = await ytdlp(url,{
-dumpSingleJson:true
-})
-
-res.json({
-title: info.title || "Instagram Video",
-thumbnail: info.thumbnail || null,
-video: info.url || null
-})
-
-}catch(e){
-
-res.json({
-error:true,
-message:e.message
-})
-
-}
-})
-
-
-// ================= SERVER START =================
-
-app.listen(PORT,()=>{
-console.log("Downloader API running on port " + PORT)
+app.listen(PORT, () => {
+  console.log("DownAll API running on port " + PORT)
 })
