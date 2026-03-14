@@ -1,13 +1,11 @@
 {
   "name": "downall-api",
   "version": "1.0.0",
-  "description": "Simple Web API download video using youtube-dl-exec",
   "main": "server.js",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "youtube-dl-exec": "^3.0.0"
+    "express": "^4.18.2"
   }
 }
