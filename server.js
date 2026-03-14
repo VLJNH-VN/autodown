@@ -1,38 +1,41 @@
 const express = require("express")
-const { downloadVideo } = require("./downloader")
+const { exec } = require("child_process")
 
 const app = express()
 
-app.get("/downall", async (req, res) => {
+app.get("/", (req,res)=>{
+ res.json({
+   status:"DOWNALL API RUNNING"
+ })
+})
 
-  try {
+app.get("/api", (req,res)=>{
 
-    const url = req.query.url
+ const url = req.query.url
+ if(!url) return res.json({error:"missing url"})
 
-    if (!url) {
-      return res.json({
-        error: "url required"
-      })
-    }
+ exec(`yt-dlp -j "${url}"`, (err, stdout)=>{
 
-    await downloadVideo(url)
+  if(err) return res.json({error:"download failed"})
 
-    res.json({
-      status: "download complete"
-    })
+  const data = JSON.parse(stdout)
 
-  } catch (err) {
+  res.json({
+   title:data.title,
+   thumbnail:data.thumbnail,
+   duration:data.duration,
+   formats:data.formats
+     .filter(v=>v.url)
+     .slice(0,10)
+     .map(v=>({
+       quality:v.format_note || v.height,
+       ext:v.ext,
+       url:v.url
+     }))
+  })
 
-    res.json({
-      error: err.message
-    })
-
-  }
+ })
 
 })
 
-const port = process.env.PORT || 3000
-
-app.listen(port, () => {
-  console.log("Server running")
-})
+app.listen(process.env.PORT || 3000)
